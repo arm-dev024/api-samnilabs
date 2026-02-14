@@ -15,7 +15,7 @@ app.add_middleware(cors)
 
 @app.get("/")
 def read_root():
-    return {"message": "Hello World"}
+    return {"message": "Hello World123"}
 
 
 if __name__ == "__main__":
