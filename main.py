@@ -15,7 +15,7 @@ app.add_middleware(
 
 @app.get("/")
 def read_root():
-    return {"message": "Hello World"}
+    return {"message": "Hello from SamniLabs API"}
 
 
 @app.get("/health")
