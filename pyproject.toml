@@ -6,6 +6,5 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.129.0",
-    "mangum>=0.21.0",
     "uvicorn>=0.40.0",
 ]
