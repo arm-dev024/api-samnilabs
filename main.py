@@ -23,12 +23,6 @@ def health():
     return {"message": "OK"}
 
 
-# Catch all routes and redirect to https://samnilabs.ai
-@app.get("/{path:path}")
-def get_routes_all():
-    return Response(status_code=404)
-
-
 if __name__ == "__main__":
     import uvicorn
 
