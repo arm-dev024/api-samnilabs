@@ -23,7 +23,9 @@ app = FastAPI(
 )
 
 allowed_origins = (
-    ["*"] if settings.app_env == "development" else [str(settings.frontend_url)]
+    ["*"]
+    if settings.app_env == "development"
+    else [str(settings.frontend_url).rstrip("/")]
 )
 
 app.add_middleware(
