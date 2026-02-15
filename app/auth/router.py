@@ -68,9 +68,9 @@ def _delete_auth_cookie(response: Response) -> None:
 
 def _error_redirect(message: str, action: str | None = None) -> RedirectResponse:
     """Redirect to the frontend auth callback with an error query parameter."""
-    return RedirectResponse(
-        url=f"{str(settings.frontend_url).rstrip('/')}/auth/callback?error={quote(message)}&action={action}"
-    )
+    redirect_url = f"{str(settings.frontend_url).rstrip('/')}/auth/callback?error={quote(message)}&action={action}"
+    print(f"DEBUG ERROR REDIRECT URL: {redirect_url}")
+    return RedirectResponse(url=redirect_url)
 
 
 @router.get("/google/login")
@@ -145,9 +145,9 @@ async def google_callback(
     )
 
     # Set JWT cookie and redirect to frontend
-    response = RedirectResponse(
-        url=f"{str(settings.frontend_url).rstrip('/')}/auth/callback?action={action}"
-    )
+    redirect_url = f"{str(settings.frontend_url).rstrip('/')}/auth/callback?action={action}"
+    print(f"DEBUG REDIRECT URL: {redirect_url}")
+    response = RedirectResponse(url=redirect_url)
     _set_auth_cookie(response, access_token)
     return response
 
