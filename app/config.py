@@ -1,29 +1,7 @@
 from pathlib import Path
 from typing import Literal
-from pydantic import BaseModel, SecretStr, HttpUrl, model_validator
+from pydantic import SecretStr, HttpUrl, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-
-class GoogleOAuthSettings(BaseModel):
-    client_id: str
-    client_secret: SecretStr
-    auth_url: HttpUrl = "https://accounts.google.com/o/oauth2/v2/auth"
-    token_url: HttpUrl = "https://oauth2.googleapis.com/token"
-    userinfo_url: HttpUrl = "https://www.googleapis.com/oauth2/v2/userinfo"
-
-
-class JWTSettings(BaseModel):
-    secret_key: SecretStr
-    algorithm: str = "HS256"
-    access_token_expire_minutes: int = 30
-
-
-class DynamoDBSettings(BaseModel):
-    endpoint_url: HttpUrl = "http://localhost:8020"
-    region: str = "us-east-1"
-    table_name: str = "samnilabs_users"
-    aws_access_key_id: str = "local"
-    aws_secret_access_key: SecretStr = "local"
 
 
 class Settings(BaseSettings):
@@ -31,8 +9,6 @@ class Settings(BaseSettings):
         env_file=str(Path(__file__).resolve().parent.parent / ".env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
-        # This allows you to use prefixes in your .env like GOOGLE_CLIENT_ID
-        env_nested_delimiter="__",
     )
 
     # App Metadata
@@ -40,10 +16,24 @@ class Settings(BaseSettings):
     base_url: HttpUrl = "http://localhost:8000"
     frontend_url: HttpUrl = "http://localhost:5173"
 
-    # Nested Groups
-    google: GoogleOAuthSettings
-    jwt: JWTSettings
-    db: DynamoDBSettings
+    # Google OAuth
+    google_client_id: str
+    google_client_secret: SecretStr
+    google_auth_url: HttpUrl = "https://accounts.google.com/o/oauth2/v2/auth"
+    google_token_url: HttpUrl = "https://oauth2.googleapis.com/token"
+    google_userinfo_url: HttpUrl = "https://www.googleapis.com/oauth2/v2/userinfo"
+
+    # JWT
+    jwt_secret_key: SecretStr
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_expire_minutes: int = 30
+
+    # DynamoDB
+    db_endpoint_url: HttpUrl = "http://localhost:8020"
+    db_region: str = "us-east-1"
+    db_table_name: str = "samnilabs_users"
+    db_aws_access_key_id: str = "local"
+    db_aws_secret_access_key: SecretStr = "local"
 
     @model_validator(mode="after")
     def production_must_use_production_urls(self) -> "Settings":
