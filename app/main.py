@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.auth.router import router as auth_router
+from app.bot.router import router as bot_router
 from app.config import settings
 from app.database import create_users_table_if_not_exists
 
@@ -37,6 +38,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
+app.include_router(bot_router, prefix="/api", tags=["bot"])
 
 
 @app.get("/")

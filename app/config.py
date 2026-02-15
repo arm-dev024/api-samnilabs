@@ -40,6 +40,14 @@ class Settings(BaseSettings):
     base_url: HttpUrl = "http://localhost:8000"
     frontend_url: HttpUrl = "http://localhost:5173"
 
+    # Deepgram (STT/TTS)
+    deepgram_api_key: SecretStr = ""
+    deepgram_voice_id: str = "aura-2-thalia-en"
+
+    # OpenAI (STT/LLM/TTS/Realtime)
+    openai_api_key: SecretStr = ""
+    openai_model: str = "gpt-4o-mini"
+
     # Nested Groups
     google: GoogleOAuthSettings
     jwt: JWTSettings
