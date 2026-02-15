@@ -10,6 +10,7 @@ from app.database import create_users_table_if_not_exists
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    settings.print_env_summary()
     # Create DynamoDB table on startup if it doesn't exist
     create_users_table_if_not_exists()
     yield

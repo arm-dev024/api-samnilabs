@@ -61,5 +61,29 @@ class Settings(BaseSettings):
     def google_redirect_uri(self) -> str:
         return f"{str(self.base_url).rstrip('/')}/auth/google/callback"
 
+    def print_env_summary(self) -> None:
+        """Print loaded env summary (secrets masked)."""
+        mask = "***"
+        print("--- Config / env summary ---")
+        print("App:")
+        print(f"  app_env={self.app_env}")
+        print(f"  base_url={self.base_url}")
+        print(f"  frontend_url={self.frontend_url}")
+        print("Google:")
+        print(f"  client_id={self.google.client_id}")
+        print(f"  client_secret={mask}")
+        print(f"  auth_url={self.google.auth_url}")
+        print("JWT:")
+        print(f"  algorithm={self.jwt.algorithm}")
+        print(f"  access_token_expire_minutes={self.jwt.access_token_expire_minutes}")
+        print(f"  secret_key={mask}")
+        print("DB:")
+        print(f"  endpoint_url={self.db.endpoint_url}")
+        print(f"  region={self.db.region}")
+        print(f"  table_name={self.db.table_name}")
+        print(f"  aws_access_key_id={self.db.aws_access_key_id}")
+        print(f"  aws_secret_access_key={mask}")
+        print("---")
+
 
 settings = Settings()
