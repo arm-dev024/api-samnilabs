@@ -1,10 +1,10 @@
 from pathlib import Path
 from typing import Literal
-from pydantic import SecretStr, HttpUrl, model_validator
+from pydantic import BaseModel, SecretStr, HttpUrl, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class GoogleOAuthSettings(BaseSettings):
+class GoogleOAuthSettings(BaseModel):
     client_id: str
     client_secret: SecretStr
     auth_url: HttpUrl = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -12,13 +12,13 @@ class GoogleOAuthSettings(BaseSettings):
     userinfo_url: HttpUrl = "https://www.googleapis.com/oauth2/v2/userinfo"
 
 
-class JWTSettings(BaseSettings):
+class JWTSettings(BaseModel):
     secret_key: SecretStr
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
 
-class DynamoDBSettings(BaseSettings):
+class DynamoDBSettings(BaseModel):
     endpoint_url: HttpUrl = "http://localhost:8020"
     region: str = "us-east-1"
     table_name: str = "samnilabs_users"
