@@ -1,6 +1,7 @@
 import secrets
+from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, Query, Response
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,8 +16,9 @@ from app.users.service import UserService
 router = APIRouter()
 
 # In-memory state store for CSRF protection during OAuth flow.
+# Maps state token -> action (e.g. "login", "signup").
 # TODO [Production]: Replace with Redis or a short-lived DB-backed store with TTL.
-_oauth_states: set[str] = set()
+_oauth_states: dict[str, str] = {}
 
 
 def _cookie_params() -> dict:
@@ -66,14 +68,24 @@ def _delete_auth_cookie(response: Response) -> None:
     )
 
 
+def _error_redirect(message: str, action: str | None = None) -> RedirectResponse:
+    """Redirect to the frontend auth callback with an error query parameter."""
+    return RedirectResponse(
+        url=f"{settings.frontend_url}/auth/callback?error={quote(message)}&action={action}"
+    )
+
+
 @router.get("/google/login")
-async def google_login():
+async def google_login(action: str = Query(default="login")):  # "login" | "signup"
     """
     Redirect the user to Google's OAuth consent screen.
-    The frontend calls this single route to initiate Google login.
+    The frontend calls this route to initiate Google login or signup.
+
+    Query params:
+        action: "login" or "signup" (default: "login")
     """
     state = secrets.token_urlsafe(32)
-    _oauth_states.add(state)
+    _oauth_states[state] = action
 
     auth_url = AuthService.build_google_auth_url(state)
     return RedirectResponse(url=auth_url)
@@ -94,52 +106,36 @@ async def google_callback(
     Cancellation: Google sends ?error=access_denied
     """
 
+    # Try to extract action from state (may be None if state is missing/invalid)
+    action = _oauth_states.pop(state, None) if state else None
+
     # Handle user cancellation or Google errors
     if error:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=error_description or error,
-        )
+        return _error_redirect(error_description or error, action)
 
     # Validate required parameters
     if not code or not state:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Missing authorization code or state parameter",
-        )
+        return _error_redirect("missing_params", action)
 
     # CSRF validation
-    if state not in _oauth_states:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid state parameter. Possible CSRF attack.",
-        )
-    _oauth_states.discard(state)
+    if action is None:
+        return _error_redirect("invalid_state")
 
     # Exchange code for tokens
     try:
         token_data = await AuthService.exchange_code_for_tokens(code)
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Failed to exchange authorization code with Google",
-        )
+        return _error_redirect("token_exchange_failed", action)
 
     google_access_token = token_data.get("access_token")
     if not google_access_token:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Google did not return an access token",
-        )
+        return _error_redirect("no_access_token", action)
 
     # Fetch user info from Google
     try:
         google_user_data = await AuthService.get_google_user_info(google_access_token)
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Failed to fetch user info from Google",
-        )
+        return _error_redirect("user_info_failed", action)
 
     # Get or create user (auto sign-in without prior signup)
     user_service = UserService(db)
@@ -152,7 +148,9 @@ async def google_callback(
     )
 
     # Set JWT cookie and redirect to frontend
-    response = RedirectResponse(url=f"{settings.frontend_url}/auth/callback")
+    response = RedirectResponse(
+        url=f"{settings.frontend_url}/auth/callback?action={action}"
+    )
     _set_auth_cookie(response, access_token)
     return response
 

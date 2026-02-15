@@ -54,7 +54,9 @@ class AuthService:
     # --- Google OAuth ---
 
     @staticmethod
-    def build_google_auth_url(state: str) -> str:
+    def build_google_auth_url(
+        state: str,
+    ) -> str:
         """Build the Google OAuth consent screen URL with CSRF state."""
         params = {
             "client_id": settings.google_client_id,
