@@ -53,7 +53,7 @@ def _set_auth_cookie(response: Response, access_token: str) -> None:
     response.set_cookie(
         key="access_token",
         value=access_token,
-        max_age=settings.jwt_access_token_expire_minutes * 60,
+        max_age=settings.jwt.access_token_expire_minutes * 60,
         **_cookie_params(),
     )
 
@@ -69,7 +69,7 @@ def _delete_auth_cookie(response: Response) -> None:
 def _error_redirect(message: str, action: str | None = None) -> RedirectResponse:
     """Redirect to the frontend auth callback with an error query parameter."""
     return RedirectResponse(
-        url=f"{settings.frontend_url}/auth/callback?error={quote(message)}&action={action}"
+        url=f"{str(settings.frontend_url).rstrip('/')}/auth/callback?error={quote(message)}&action={action}"
     )
 
 
@@ -146,7 +146,7 @@ async def google_callback(
 
     # Set JWT cookie and redirect to frontend
     response = RedirectResponse(
-        url=f"{settings.frontend_url}/auth/callback?action={action}"
+        url=f"{str(settings.frontend_url).rstrip('/')}/auth/callback?action={action}"
     )
     _set_auth_cookie(response, access_token)
     return response

@@ -5,7 +5,7 @@ lambda.zip
 .claude
 
 # Python
-__pycache__/
+__pycache__/**/*
 
 # Docker DynamoDB data
 docker-dynamodb-data/

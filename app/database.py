@@ -5,12 +5,12 @@ from app.config import settings
 def get_dynamodb_resource():
     """Get a boto3 DynamoDB resource configured for local or AWS."""
     kwargs = {
-        "region_name": settings.dynamodb_region,
+        "region_name": settings.db.region,
     }
-    if settings.dynamodb_endpoint_url:
-        kwargs["endpoint_url"] = settings.dynamodb_endpoint_url
-        kwargs["aws_access_key_id"] = settings.aws_access_key_id
-        kwargs["aws_secret_access_key"] = settings.aws_secret_access_key
+    if settings.db.endpoint_url:
+        kwargs["endpoint_url"] = str(settings.db.endpoint_url)
+        kwargs["aws_access_key_id"] = settings.db.aws_access_key_id
+        kwargs["aws_secret_access_key"] = settings.db.aws_secret_access_key.get_secret_value()
 
     return boto3.resource("dynamodb", **kwargs)
 
@@ -18,7 +18,7 @@ def get_dynamodb_resource():
 def get_dynamodb_table():
     """Get the users DynamoDB table resource."""
     dynamodb = get_dynamodb_resource()
-    return dynamodb.Table(settings.dynamodb_table_name)
+    return dynamodb.Table(settings.db.table_name)
 
 
 def create_users_table_if_not_exists():
@@ -26,11 +26,11 @@ def create_users_table_if_not_exists():
     dynamodb = get_dynamodb_resource()
     existing_tables = dynamodb.meta.client.list_tables()["TableNames"]
 
-    if settings.dynamodb_table_name in existing_tables:
+    if settings.db.table_name in existing_tables:
         return
 
     table = dynamodb.create_table(
-        TableName=settings.dynamodb_table_name,
+        TableName=settings.db.table_name,
         KeySchema=[
             {"AttributeName": "id", "KeyType": "HASH"},
         ],
