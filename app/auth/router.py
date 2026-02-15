@@ -53,7 +53,7 @@ def _set_auth_cookie(response: Response, access_token: str) -> None:
     response.set_cookie(
         key="access_token",
         value=access_token,
-        max_age=settings.jwt_access_token_expire_minutes * 60,
+        max_age=settings.jwt.access_token_expire_minutes * 60,
         **_cookie_params(),
     )
 
