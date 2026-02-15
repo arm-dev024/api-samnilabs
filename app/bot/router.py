@@ -40,7 +40,7 @@ async def ice_candidate(request: SmallWebRTCPatchRequest):
     return {"status": "success"}
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    yield  # Run app
-    await small_webrtc_handler.close()
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     yield  # Run app
+#     await small_webrtc_handler.close()
