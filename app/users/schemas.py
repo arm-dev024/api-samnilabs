@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from pydantic import BaseModel
 
 
@@ -23,7 +21,7 @@ class LocalUserCreate(BaseModel):
 class UserResponse(BaseModel):
     """Public user representation returned by the API."""
 
-    id: UUID
+    id: str
     email: str
     full_name: str
     auth_provider: str

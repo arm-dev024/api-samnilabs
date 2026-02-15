@@ -5,15 +5,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.auth.router import router as auth_router
 from app.config import settings
-from app.database import Base, engine
+from app.database import create_users_table_if_not_exists
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create tables on startup in development (use Alembic migrations in production)
-    if settings.app_env == "development":
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+    # Create DynamoDB table on startup if it doesn't exist
+    create_users_table_if_not_exists()
     yield
 
 

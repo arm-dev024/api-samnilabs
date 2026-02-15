@@ -1,25 +1,71 @@
-from collections.abc import AsyncGenerator
-
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import DeclarativeBase
-
+import boto3
 from app.config import settings
 
-engine = create_async_engine(settings.database_url, echo=settings.app_env == "development")
 
-async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+def get_dynamodb_resource():
+    """Get a boto3 DynamoDB resource configured for local or AWS."""
+    kwargs = {
+        "region_name": settings.dynamodb_region,
+    }
+    if settings.dynamodb_endpoint_url:
+        kwargs["endpoint_url"] = settings.dynamodb_endpoint_url
+        kwargs["aws_access_key_id"] = settings.aws_access_key_id
+        kwargs["aws_secret_access_key"] = settings.aws_secret_access_key
+
+    return boto3.resource("dynamodb", **kwargs)
 
 
-class Base(DeclarativeBase):
-    pass
+def get_dynamodb_table():
+    """Get the users DynamoDB table resource."""
+    dynamodb = get_dynamodb_resource()
+    return dynamodb.Table(settings.dynamodb_table_name)
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """FastAPI dependency that yields an async database session."""
-    async with async_session() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
+def create_users_table_if_not_exists():
+    """Create the users table in DynamoDB if it doesn't already exist."""
+    dynamodb = get_dynamodb_resource()
+    existing_tables = dynamodb.meta.client.list_tables()["TableNames"]
+
+    if settings.dynamodb_table_name in existing_tables:
+        return
+
+    table = dynamodb.create_table(
+        TableName=settings.dynamodb_table_name,
+        KeySchema=[
+            {"AttributeName": "id", "KeyType": "HASH"},
+        ],
+        AttributeDefinitions=[
+            {"AttributeName": "id", "AttributeType": "S"},
+            {"AttributeName": "email", "AttributeType": "S"},
+            {"AttributeName": "google_id", "AttributeType": "S"},
+        ],
+        GlobalSecondaryIndexes=[
+            {
+                "IndexName": "email-index",
+                "KeySchema": [
+                    {"AttributeName": "email", "KeyType": "HASH"},
+                ],
+                "Projection": {"ProjectionType": "ALL"},
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": 5,
+                    "WriteCapacityUnits": 5,
+                },
+            },
+            {
+                "IndexName": "google_id-index",
+                "KeySchema": [
+                    {"AttributeName": "google_id", "KeyType": "HASH"},
+                ],
+                "Projection": {"ProjectionType": "ALL"},
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": 5,
+                    "WriteCapacityUnits": 5,
+                },
+            },
+        ],
+        ProvisionedThroughput={
+            "ReadCapacityUnits": 5,
+            "WriteCapacityUnits": 5,
+        },
+    )
+    table.wait_until_exists()

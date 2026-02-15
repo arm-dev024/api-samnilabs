@@ -3,12 +3,10 @@ from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, Query, Response
 from fastapi.responses import JSONResponse, RedirectResponse
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user
 from app.auth.service import AuthService
 from app.config import settings
-from app.database import get_db
 from app.users.models import User
 from app.users.schemas import UserResponse
 from app.users.service import UserService
@@ -97,7 +95,6 @@ async def google_callback(
     state: str | None = Query(default=None),
     error: str | None = Query(default=None),
     error_description: str | None = Query(default=None),
-    db: AsyncSession = Depends(get_db),
 ):
     """
     Google redirects here after the user consents or cancels.
@@ -138,8 +135,8 @@ async def google_callback(
         return _error_redirect("user_info_failed", action)
 
     # Get or create user (auto sign-in without prior signup)
-    user_service = UserService(db)
-    user = await user_service.get_or_create_google_user(google_user_data)
+    user_service = UserService()
+    user = user_service.get_or_create_google_user(google_user_data)
 
     # Generate custom JWT
     access_token = AuthService.create_access_token(

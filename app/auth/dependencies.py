@@ -1,17 +1,12 @@
-from uuid import UUID
-
-from fastapi import Depends, HTTPException, Request, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import HTTPException, Request, status
 
 from app.auth.service import AuthService
-from app.database import get_db
 from app.users.models import User
 from app.users.service import UserService
 
 
 async def get_current_user(
     request: Request,
-    db: AsyncSession = Depends(get_db),
 ) -> User:
     """
     FastAPI dependency: extracts JWT from the access_token cookie,
@@ -33,8 +28,8 @@ async def get_current_user(
             detail="Invalid or expired token",
         )
 
-    user_service = UserService(db)
-    user = await user_service.get_user_by_id(UUID(payload.sub))
+    user_service = UserService()
+    user = user_service.get_user_by_id(payload.sub)
 
     if user is None:
         raise HTTPException(
