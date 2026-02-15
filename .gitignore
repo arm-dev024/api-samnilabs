@@ -1,3 +1,5 @@
 .venv
 .lambda_package
 lambda.zip
+.env
+.claude

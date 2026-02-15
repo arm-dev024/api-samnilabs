@@ -1,29 +1,6 @@
-from fastapi import FastAPI, Response
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
-
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-@app.get("/")
-def read_root():
-    return {"message": "Hello from SamniLabs API"}
-
-
-@app.get("/health")
-def health():
-    return {"message": "OK"}
-
+from app.config import settings
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("app.main:app", host=settings.host, port=settings.port, reload=True)
