@@ -1,5 +1,6 @@
+from pathlib import Path
 from typing import Literal
-from pydantic import SecretStr, HttpUrl
+from pydantic import SecretStr, HttpUrl, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,7 +28,7 @@ class DynamoDBSettings(BaseSettings):
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(Path(__file__).resolve().parent.parent / ".env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
         # This allows you to use prefixes in your .env like GOOGLE_CLIENT_ID
@@ -43,6 +44,18 @@ class Settings(BaseSettings):
     google: GoogleOAuthSettings
     jwt: JWTSettings
     db: DynamoDBSettings
+
+    @model_validator(mode="after")
+    def production_must_use_production_urls(self) -> "Settings":
+        if self.app_env != "production":
+            return self
+        frontend = str(self.frontend_url)
+        if "localhost" in frontend or "127.0.0.1" in frontend:
+            raise ValueError(
+                "In production, FRONTEND_URL must not be localhost. "
+                "Set FRONTEND_URL in your production environment (e.g. FRONTEND_URL=https://dashboard.samnilabs.ai)."
+            )
+        return self
 
     @property
     def google_redirect_uri(self) -> str:
