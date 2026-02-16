@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.auth.router import router as auth_router
-from app.bot.router import router as bot_router
+from app.bot.router import router as bot_router, small_webrtc_handler
 from app.config import settings
 from app.database import create_users_table_if_not_exists
 
@@ -15,6 +15,8 @@ async def lifespan(app: FastAPI):
     # Create DynamoDB table on startup if it doesn't exist
     create_users_table_if_not_exists()
     yield
+    # Clean up WebRTC connections on shutdown
+    await small_webrtc_handler.close()
 
 
 app = FastAPI(

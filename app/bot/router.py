@@ -1,5 +1,5 @@
-from contextlib import asynccontextmanager
-from fastapi import APIRouter, BackgroundTasks, FastAPI
+from aiortc import RTCIceServer
+from fastapi import APIRouter, BackgroundTasks
 from loguru import logger
 from pipecat.transports.smallwebrtc.request_handler import (
     ConnectionMode,
@@ -14,7 +14,12 @@ router = APIRouter()
 
 # SINGLE mode prevents duplicate server-side connections when the client
 # sends a second offer (e.g. reconnection), avoiding two pipelines for one session.
-small_webrtc_handler = SmallWebRTCRequestHandler(connection_mode=ConnectionMode.SINGLE)
+small_webrtc_handler = SmallWebRTCRequestHandler(
+    connection_mode=ConnectionMode.SINGLE,
+    ice_servers=[
+        RTCIceServer(urls="stun:stun.l.google.com:19302"),
+    ],
+)
 
 
 @router.post("/offer")
@@ -40,7 +45,3 @@ async def ice_candidate(request: SmallWebRTCPatchRequest):
     return {"status": "success"}
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    yield  # Run app
-    await small_webrtc_handler.close()
