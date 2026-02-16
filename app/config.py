@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     openai_api_key: SecretStr = ""
     openai_model: str = "gpt-4o-mini"
 
+    # Cloudflare TURN/STUN
+    cloudflare_turn_token: SecretStr = ""
+    cloudflare_turn_key_id: str = ""
+
     # Nested Groups
     google: GoogleOAuthSettings
     jwt: JWTSettings
@@ -91,6 +95,9 @@ class Settings(BaseSettings):
         print(f"  table_name={self.db.table_name}")
         print(f"  aws_access_key_id={self.db.aws_access_key_id}")
         print(f"  aws_secret_access_key={mask}")
+        print("Cloudflare TURN:")
+        print(f"  turn_key_id={self.cloudflare_turn_key_id}")
+        print(f"  turn_token={mask}")
         print("---")
 
 
