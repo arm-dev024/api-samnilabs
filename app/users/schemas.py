@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from app.subscription.schemas import PricingPlan
+
 
 class GoogleUserCreate(BaseModel):
     """Schema for creating a user from Google OAuth data."""
@@ -30,3 +32,4 @@ class UserResponse(BaseModel):
     subscription_plan_id: str | None = None
     subscription_status: str = "none"
     subscribed_at: str | None = None
+    subscription: PricingPlan | None = None

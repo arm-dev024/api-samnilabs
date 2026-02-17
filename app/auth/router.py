@@ -157,17 +157,7 @@ async def get_current_user_route(
     current_user: User = Depends(get_current_user),
 ):
     """Returns the currently authenticated user's profile."""
-    return UserResponse(
-        id=current_user.id,
-        email=current_user.email,
-        full_name=current_user.full_name,
-        auth_provider=current_user.auth_provider,
-        picture_url=current_user.picture_url,
-        is_active=current_user.is_active,
-        subscription_plan_id=current_user.subscription_plan_id,
-        subscription_status=current_user.subscription_status,
-        subscribed_at=current_user.subscribed_at,
-    )
+    return UserService.build_user_response(current_user)
 
 
 @router.post("/logout")
