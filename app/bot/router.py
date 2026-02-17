@@ -16,9 +16,9 @@ router = APIRouter()
 # sends a second offer (e.g. reconnection), avoiding two pipelines for one session.
 small_webrtc_handler = SmallWebRTCRequestHandler(
     connection_mode=ConnectionMode.SINGLE,
-    ice_servers=[
-        RTCIceServer(urls="stun:stun.l.google.com:19302"),
-    ],
+    # ice_servers=[
+    #     RTCIceServer(urls="stun:stun.l.google.com:19302"),
+    # ],
 )
 
 
@@ -43,5 +43,3 @@ async def ice_candidate(request: SmallWebRTCPatchRequest):
     logger.debug(f"Received patch request: {request}")
     await small_webrtc_handler.handle_patch_request(request)
     return {"status": "success"}
-
-
