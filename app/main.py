@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.auth.dependencies import AuthMiddleware
 from app.auth.router import router as auth_router
 from app.bot.router import router as bot_router, small_webrtc_handler
 from app.subscription.router import router as subscription_router
@@ -39,6 +40,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(AuthMiddleware)
 
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(bot_router, prefix="/api", tags=["bot"])

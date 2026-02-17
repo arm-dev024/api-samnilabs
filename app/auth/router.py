@@ -164,6 +164,9 @@ async def get_current_user_route(
         auth_provider=current_user.auth_provider,
         picture_url=current_user.picture_url,
         is_active=current_user.is_active,
+        subscription_plan_id=current_user.subscription_plan_id,
+        subscription_status=current_user.subscription_status,
+        subscribed_at=current_user.subscribed_at,
     )
 
 

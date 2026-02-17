@@ -13,6 +13,11 @@ class User:
     picture_url: str | None = None
     hashed_password: str | None = None
     is_active: bool = True
+    subscription_plan_id: str | None = None
+    stripe_customer_id: str | None = None
+    stripe_subscription_id: str | None = None
+    subscription_status: str = "none"  # "none" | "active" | "canceled" | "past_due"
+    subscribed_at: str | None = None
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
@@ -33,6 +38,15 @@ class User:
             item["picture_url"] = self.picture_url
         if self.hashed_password is not None:
             item["hashed_password"] = self.hashed_password
+        if self.subscription_plan_id is not None:
+            item["subscription_plan_id"] = self.subscription_plan_id
+        if self.stripe_customer_id is not None:
+            item["stripe_customer_id"] = self.stripe_customer_id
+        if self.stripe_subscription_id is not None:
+            item["stripe_subscription_id"] = self.stripe_subscription_id
+        item["subscription_status"] = self.subscription_status
+        if self.subscribed_at is not None:
+            item["subscribed_at"] = self.subscribed_at
         return item
 
     @classmethod
@@ -47,6 +61,11 @@ class User:
             picture_url=item.get("picture_url"),
             hashed_password=item.get("hashed_password"),
             is_active=item.get("is_active", True),
+            subscription_plan_id=item.get("subscription_plan_id"),
+            stripe_customer_id=item.get("stripe_customer_id"),
+            stripe_subscription_id=item.get("stripe_subscription_id"),
+            subscription_status=item.get("subscription_status", "none"),
+            subscribed_at=item.get("subscribed_at"),
             created_at=item.get("created_at", ""),
             updated_at=item.get("updated_at", ""),
         )

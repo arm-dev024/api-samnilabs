@@ -37,3 +37,8 @@ class UserRepository:
         user.updated_at = datetime.now(timezone.utc).isoformat()
         self.table.put_item(Item=user.to_dynamo_item())
         return user
+
+    def update(self, user: User) -> User:
+        user.updated_at = datetime.now(timezone.utc).isoformat()
+        self.table.put_item(Item=user.to_dynamo_item())
+        return user

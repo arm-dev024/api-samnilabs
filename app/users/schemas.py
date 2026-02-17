@@ -27,3 +27,6 @@ class UserResponse(BaseModel):
     auth_provider: str
     picture_url: str | None = None
     is_active: bool
+    subscription_plan_id: str | None = None
+    subscription_status: str = "none"
+    subscribed_at: str | None = None

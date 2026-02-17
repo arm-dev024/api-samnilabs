@@ -1,5 +1,5 @@
 import stripe
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.auth.dependencies import get_current_user
 from app.config import settings
@@ -10,6 +10,8 @@ from app.subscription.schemas import (
     SubscriptionPlansResponse,
 )
 from app.users.models import User
+from app.users.schemas import UserResponse
+from app.users.service import UserService
 
 router = APIRouter()
 
@@ -35,7 +37,7 @@ async def create_checkout_session(
     body: CheckoutRequest,
     current_user: User = Depends(get_current_user),
 ):
-    """Create a Stripe Checkout session for the given plan."""
+    """Create a Stripe Checkout session and update the user's subscription."""
     plan = _get_plan_by_id(body.plan_id)
 
     if plan is None:
@@ -73,55 +75,14 @@ async def create_checkout_session(
             detail=f"Stripe error: {str(e)}",
         )
 
+    # Update user subscription in DynamoDB
+    user_service = UserService()
+    user_service.update_subscription(
+        user=current_user,
+        plan_id=body.plan_id,
+        stripe_customer_id=session.customer,
+        stripe_subscription_id=session.subscription,
+        subscription_status="active",
+    )
+
     return CheckoutResponse(checkout_url=session.url)
-
-
-@router.post("/webhook")
-async def stripe_webhook(request: Request):
-    """Handle Stripe webhook events (e.g. checkout.session.completed)."""
-    payload = await request.body()
-    sig_header = request.headers.get("stripe-signature")
-
-    try:
-        event = stripe.Webhook.construct_event(
-            payload,
-            sig_header,
-            settings.stripe.webhook_secret.get_secret_value(),
-        )
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid payload",
-        )
-    except stripe.SignatureVerificationError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid signature",
-        )
-
-    if event["type"] == "checkout.session.completed":
-        session = event["data"]["object"]
-        user_id = session["metadata"].get("user_id")
-        plan_id = session["metadata"].get("plan_id")
-        subscription_id = session.get("subscription")
-        customer_id = session.get("customer")
-        print(
-            f"[Stripe] Checkout completed: user_id={user_id}, "
-            f"plan_id={plan_id}, subscription_id={subscription_id}, "
-            f"customer_id={customer_id}"
-        )
-        # TODO: Update user record with subscription details
-
-    elif event["type"] == "customer.subscription.updated":
-        subscription = event["data"]["object"]
-        print(
-            f"[Stripe] Subscription updated: {subscription['id']}, status={subscription['status']}"
-        )
-        # TODO: Handle plan changes / status updates
-
-    elif event["type"] == "customer.subscription.deleted":
-        subscription = event["data"]["object"]
-        print(f"[Stripe] Subscription cancelled: {subscription['id']}")
-        # TODO: Handle cancellation
-
-    return {"status": "ok"}

@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from app.users.models import User
 from app.users.repository import UserRepository
 from app.users.schemas import GoogleUserCreate
@@ -31,3 +33,20 @@ class UserService:
 
     def get_user_by_id(self, user_id: str) -> User | None:
         return self.repository.get_by_id(user_id)
+
+    def update_subscription(
+        self,
+        user: User,
+        plan_id: str,
+        stripe_customer_id: str | None = None,
+        stripe_subscription_id: str | None = None,
+        subscription_status: str = "active",
+    ) -> User:
+        user.subscription_plan_id = plan_id
+        user.subscription_status = subscription_status
+        user.subscribed_at = datetime.now(timezone.utc).isoformat()
+        if stripe_customer_id:
+            user.stripe_customer_id = stripe_customer_id
+        if stripe_subscription_id:
+            user.stripe_subscription_id = stripe_subscription_id
+        return self.repository.update(user)
