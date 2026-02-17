@@ -1,7 +1,12 @@
 .venv
+
 .lambda_package
+
 lambda.zip
+
 .env
+.env.production
+
 .claude
 
 # Python
