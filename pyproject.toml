@@ -15,4 +15,5 @@ dependencies = [
     "httpx>=0.28.0",
     "python-dotenv>=1.0.1",
     "boto3>=1.35.0",
+    "stripe>=14.3.0",
 ]

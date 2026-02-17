@@ -26,6 +26,13 @@ class DynamoDBSettings(BaseModel):
     aws_secret_access_key: SecretStr = "local"
 
 
+class StripeSettings(BaseModel):
+    secret_key: SecretStr
+    webhook_secret: SecretStr
+    success_url: str = "http://localhost:5173/subscription/success"
+    cancel_url: str = "http://localhost:5173/subscription/cancel"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=str(Path(__file__).resolve().parent.parent / ".env"),
@@ -52,6 +59,7 @@ class Settings(BaseSettings):
     google: GoogleOAuthSettings
     jwt: JWTSettings
     db: DynamoDBSettings
+    stripe: StripeSettings
 
     @model_validator(mode="after")
     def production_must_use_production_urls(self) -> "Settings":
@@ -91,6 +99,11 @@ class Settings(BaseSettings):
         print(f"  table_name={self.db.table_name}")
         print(f"  aws_access_key_id={self.db.aws_access_key_id}")
         print(f"  aws_secret_access_key={mask}")
+        print("Stripe:")
+        print(f"  secret_key={mask}")
+        print(f"  webhook_secret={mask}")
+        print(f"  success_url={self.stripe.success_url}")
+        print(f"  cancel_url={self.stripe.cancel_url}")
         print("---")
 
 

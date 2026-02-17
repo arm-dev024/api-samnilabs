@@ -1,4 +1,9 @@
+from typing import Literal
+
 from pydantic import BaseModel
+
+Currency = Literal["USD"]
+BillingPeriod = Literal["month", "year"]
 
 
 class PlanFeature(BaseModel):
@@ -10,13 +15,22 @@ class PricingPlan(BaseModel):
     id: str
     name: str
     price: int | None  # None for custom/enterprise pricing
-    currency: str = "USD"
-    billing_period: str = "month"
+    currency: Currency = "USD"
+    billing_period: BillingPeriod = "month"
     description: str
     cta_label: str
     cta_action: str  # "free_trial" | "book_demo" | "contact_sales"
     is_popular: bool = False
+    stripe_price_id: str | None = None
     features: list[PlanFeature]
+
+
+class CheckoutRequest(BaseModel):
+    plan_id: str
+
+
+class CheckoutResponse(BaseModel):
+    checkout_url: str
 
 
 class SubscriptionPlansResponse(BaseModel):
@@ -34,6 +48,7 @@ SUBSCRIPTION_PLANS: list[dict] = [
         "cta_label": "Start Free Trial",
         "cta_action": "free_trial",
         "is_popular": False,
+        "stripe_price_id": "price_1T1qC5LgqsANl3qXv9otv31a",
         "features": [
             {"text": "1,000 AI conversations/month", "included": True},
             {"text": "WhatsApp & Web Chat", "included": True},
@@ -52,6 +67,7 @@ SUBSCRIPTION_PLANS: list[dict] = [
         "cta_label": "Book a Demo",
         "cta_action": "book_demo",
         "is_popular": True,
+        "stripe_price_id": "price_1T1qBgLgqsANl3qXgoXgwvnJ",
         "features": [
             {"text": "10,000 AI conversations/month", "included": True},
             {"text": "All channels (WhatsApp, Meta, Web, Voice)", "included": True},
