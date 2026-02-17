@@ -81,11 +81,10 @@ async def playground_offer(
     agent_id: str,
     request: SmallWebRTCRequest,
     background_tasks: BackgroundTasks,
-    user: User = Depends(get_current_user),
 ):
     """Start a WebRTC playground session using the agent's configuration."""
     service = AgentService()
-    agent = service.get_agent(user, agent_id)
+    agent = service.get_agent_by_id(agent_id)
 
     if not agent.is_active:
         raise HTTPException(
@@ -93,7 +92,7 @@ async def playground_offer(
             detail="Agent is not active",
         )
 
-    logger.info(f"Playground offer for agent={agent_id} user={user.id}")
+    logger.info(f"Playground offer for agent={agent_id}")
 
     async def webrtc_connection_callback(connection):
         background_tasks.add_task(run_agent_playground, connection, agent)

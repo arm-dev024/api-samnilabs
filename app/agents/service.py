@@ -70,6 +70,22 @@ class AgentService:
         user.agents.remove(agent)
         self.user_repo.update(user)
 
+    def get_agent_by_id(self, agent_id: str) -> Agent:
+        """Find an agent by ID across all users (for public/playground access)."""
+        table = self.user_repo.table
+        response = table.scan(
+            FilterExpression="attribute_exists(agents)",
+        )
+        for item in response.get("Items", []):
+            user = User.from_dynamo_item(item)
+            for agent in user.agents:
+                if agent.id == agent_id:
+                    return agent
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Agent not found",
+        )
+
     @staticmethod
     def build_agent_response(agent: Agent) -> AgentResponse:
         return AgentResponse(
