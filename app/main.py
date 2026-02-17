@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.agents.router import router as agents_router
+from app.agents.router import router as agents_router, playground_webrtc_handler
 from app.auth.dependencies import AuthMiddleware
 from app.auth.router import router as auth_router
 from app.bot.router import router as bot_router, small_webrtc_handler
@@ -20,6 +20,7 @@ async def lifespan(app: FastAPI):
     yield
     # Clean up WebRTC connections on shutdown
     await small_webrtc_handler.close()
+    await playground_webrtc_handler.close()
 
 
 app = FastAPI(

@@ -5,110 +5,25 @@
 #
 from datetime import datetime
 
-from loguru import logger
-from pipecat.audio.vad.silero import SileroVADAnalyzer
-from pipecat.frames.frames import LLMRunFrame
-from pipecat.pipeline.pipeline import Pipeline
-from pipecat.pipeline.runner import PipelineRunner
-from pipecat.pipeline.task import PipelineParams, PipelineTask
-from pipecat.processors.aggregators.llm_context import LLMContext
-from pipecat.processors.aggregators.llm_response_universal import (
-    LLMContextAggregatorPair,
-    LLMUserAggregatorParams,
-)
-from pipecat.services.deepgram.stt import DeepgramSTTService
-from pipecat.services.deepgram.tts import DeepgramTTSService
-from pipecat.services.openai.base_llm import BaseOpenAILLMService
-from pipecat.services.openai.llm import OpenAILLMService
-from pipecat.transports.base_transport import TransportParams
-from pipecat.transports.smallwebrtc.transport import SmallWebRTCTransport
-
+from app.bot.pipeline import PipelineConfig, run_pipeline
 from app.config import settings
 
 
 async def run_bot(webrtc_connection):
-    pipecat_transport = SmallWebRTCTransport(
-        webrtc_connection=webrtc_connection,
-        params=TransportParams(
-            audio_in_enabled=True,
-            audio_out_enabled=True,
-            audio_out_10ms_chunks=2,
-        ),
-    )
-
-    stt = DeepgramSTTService(api_key=settings.deepgram_api_key.get_secret_value())
-
-    tts = DeepgramTTSService(
-        api_key=settings.deepgram_api_key.get_secret_value(),
-        voice=settings.deepgram_voice_id,
-    )
-
-    llm = OpenAILLMService(
-        api_key=settings.openai_api_key.get_secret_value(),
-        model=settings.openai_model,
-        params=BaseOpenAILLMService.InputParams(
-            temperature=0.7,  # Response creativity (0.0-2.0)
-            max_completion_tokens=150,  # Maximum response length
-            frequency_penalty=0.5,  # Reduce repetition (0.0-2.0)
-            presence_penalty=0.5,  # Encourage topic diversity (0.0-2.0)
-        ),
-    )
     current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M")
-    messages = [
-        {
-            "role": "system",
-            "content": (
-                f"You are a friendly and concise Barber Shop assistant. "
-                f"To create an appointment, ask for the user's name, date, time, and phone. "
-                f"Notes are optional; if not provided, pass an empty string to the function. "
-                f"Once you have the details, use 'create_appointment'. "
-                f"Current date and time: {current_datetime}."
-                f"After successfully creating the appointment, thank the user and say goodbye."
-            ),
-        },
-    ]
 
-    context = LLMContext(
-        messages,
-    )
-    user_aggregator, assistant_aggregator = LLMContextAggregatorPair(
-        context,
-        user_params=LLMUserAggregatorParams(
-            vad_analyzer=SileroVADAnalyzer(),
+    config = PipelineConfig(
+        system_prompt=(
+            f"You are a friendly and concise Barber Shop assistant. "
+            f"To create an appointment, ask for the user's name, date, time, and phone. "
+            f"Notes are optional; if not provided, pass an empty string to the function. "
+            f"Once you have the details, use 'create_appointment'. "
+            f"Current date and time: {current_datetime}."
+            f"After successfully creating the appointment, thank the user and say goodbye."
         ),
+        model=settings.openai_model,
+        voice_id=settings.deepgram_voice_id,
+        label="bot",
     )
 
-    pipeline = Pipeline(
-        [
-            pipecat_transport.input(),
-            stt,
-            user_aggregator,
-            llm,
-            tts,
-            pipecat_transport.output(),
-            assistant_aggregator,
-        ]
-    )
-
-    task = PipelineTask(
-        pipeline,
-        params=PipelineParams(
-            enable_metrics=True,
-            enable_usage_metrics=True,
-        ),
-    )
-
-    @pipecat_transport.event_handler("on_client_connected")
-    async def on_client_connected(transport, client):
-        logger.info("Pipecat Client connected")
-        # Kick off the conversation.
-        await task.queue_frames([LLMRunFrame()])
-
-    @pipecat_transport.event_handler("on_client_disconnected")
-    async def on_client_disconnected(transport, client):
-        logger.info("Pipecat Client disconnected")
-        await task.cancel()
-
-    runner = PipelineRunner(handle_sigint=False)
-
-    await runner.run(task)
+    await run_pipeline(webrtc_connection, config)
