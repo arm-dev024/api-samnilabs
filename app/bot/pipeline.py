@@ -45,6 +45,13 @@ GET_AVAILABLE_DATE_TIME_FUNCTION = FunctionSchema(
     required=[],
 )
 
+END_CALL_FUNCTION = FunctionSchema(
+    name="end_call",
+    description="End the call and disconnect. Use this when the conversation is complete, e.g. after confirming an appointment, user says goodbye, or the request has been fulfilled.",
+    properties={},
+    required=[],
+)
+
 
 @dataclass
 class PipelineConfig:
@@ -95,9 +102,11 @@ async def run_pipeline(webrtc_connection, config: PipelineConfig):
         },
     ]
 
-    tools = None
+    task_ref: list = []  # Mutable ref for task, set after creation
+
+    standard_tools: list = [END_CALL_FUNCTION]
     if config.calendar_id:
-        tools = ToolsSchema(standard_tools=[GET_AVAILABLE_DATE_TIME_FUNCTION])
+        standard_tools = [GET_AVAILABLE_DATE_TIME_FUNCTION, END_CALL_FUNCTION]
 
         async def get_available_date_time(
             params: FunctionCallParams,
@@ -119,6 +128,15 @@ async def run_pipeline(webrtc_connection, config: PipelineConfig):
 
         llm.register_direct_function(get_available_date_time, cancel_on_interruption=False)
 
+    async def end_call(params: FunctionCallParams) -> None:
+        """End the call and disconnect when the conversation is complete."""
+        await params.result_callback({"status": "ended"})
+        if task_ref:
+            await task_ref[0].cancel()
+
+    llm.register_direct_function(end_call, cancel_on_interruption=False)
+
+    tools = ToolsSchema(standard_tools=standard_tools)
     context = LLMContext(messages, tools=tools)
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(
         context,
@@ -146,6 +164,7 @@ async def run_pipeline(webrtc_connection, config: PipelineConfig):
             enable_usage_metrics=True,
         ),
     )
+    task_ref.append(task)
 
     @pipecat_transport.event_handler("on_client_connected")
     async def on_client_connected(transport, client):
