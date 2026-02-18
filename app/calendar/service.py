@@ -68,7 +68,10 @@ class CalendarService:
 
     def get_availability(self, user_id: str, start_date: str, end_date: str) -> list[dict]:
         settings = self.get_or_create_settings(user_id)
-        rules = {r["dayOfMonth"]: r["availableSlots"] for r in self.repo.list_rules(user_id)}
+        rules = {
+            int(r["dayOfMonth"]): r["availableSlots"]
+            for r in self.repo.list_rules(user_id)
+        }
         overrides = {
             o["date"]: o
             for o in self.repo.list_date_overrides(user_id, start_date, end_date)
@@ -83,8 +86,8 @@ class CalendarService:
                     time_str = f"{time_str[:2]}:{time_str[2:]}"
                 booked.setdefault(date, set()).add(time_str)
 
-        min_notice = settings.get("minNoticeHours", 0)
-        horizon = settings.get("horizonDays", 30)
+        min_notice = int(settings.get("minNoticeHours", 0) or 0)
+        horizon = int(settings.get("horizonDays", 30) or 30)
         hard_cutoff = settings.get("hardCutoffDate")
         now = datetime.now(timezone.utc)
 

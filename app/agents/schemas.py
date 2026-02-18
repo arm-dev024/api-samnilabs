@@ -12,6 +12,7 @@ class AgentCreate(BaseModel):
     max_tokens: int = 150
     voice_provider: str = "deepgram"  # "deepgram" | "cartesia" | etc.
     voice_id: str = "aura-2-thalia-en"
+    calendar_id: str | None = None  # Optional, format: "calendar[<id>]" or plain id
 
 
 class AgentUpdate(BaseModel):
@@ -26,6 +27,7 @@ class AgentUpdate(BaseModel):
     voice_provider: str | None = None
     voice_id: str | None = None
     is_active: bool | None = None
+    calendar_id: str | None = None
 
 
 class AgentResponse(BaseModel):
@@ -41,5 +43,6 @@ class AgentResponse(BaseModel):
     voice_provider: str
     voice_id: str
     is_active: bool
+    calendar_id: str | None = None
     created_at: str
     updated_at: str

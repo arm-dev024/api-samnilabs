@@ -1,6 +1,9 @@
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 from loguru import logger
+from pipecat.adapters.schemas.function_schema import FunctionSchema
+from pipecat.adapters.schemas.tools_schema import ToolsSchema
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.frames.frames import LLMRunFrame
 from pipecat.pipeline.pipeline import Pipeline
@@ -13,12 +16,34 @@ from pipecat.processors.aggregators.llm_response_universal import (
 )
 from pipecat.services.deepgram.stt import DeepgramSTTService
 from pipecat.services.deepgram.tts import DeepgramTTSService
+from pipecat.services.llm_service import FunctionCallParams
 from pipecat.services.openai.base_llm import BaseOpenAILLMService
 from pipecat.services.openai.llm import OpenAILLMService
 from pipecat.transports.base_transport import TransportParams
 from pipecat.transports.smallwebrtc.transport import SmallWebRTCTransport
 
+from app.calendar.service import CalendarService
 from app.config import settings
+
+
+def _calendar_user_id(calendar_id: str) -> str:
+    """Extract user id from calendar_id. Supports 'calendar[userId]' or plain userId."""
+    if calendar_id.startswith("calendar[") and calendar_id.endswith("]"):
+        return calendar_id[9:-1]
+    return calendar_id
+
+
+GET_AVAILABLE_DATE_TIME_FUNCTION = FunctionSchema(
+    name="get_available_date_time",
+    description="Get available time slots for a given date. Checks the calendar and returns only slots that are not booked. If no date is provided, uses today's date.",
+    properties={
+        "date": {
+            "type": "string",
+            "description": "Date in YYYY-MM-DD format. Defaults to today if omitted.",
+        },
+    },
+    required=[],
+)
 
 
 @dataclass
@@ -31,6 +56,7 @@ class PipelineConfig:
     max_tokens: int = 150
     voice_id: str = "aura-2-thalia-en"
     label: str = "bot"
+    calendar_id: str | None = None  # When set, enables get_available_date_time tool
 
 
 async def run_pipeline(webrtc_connection, config: PipelineConfig):
@@ -69,7 +95,31 @@ async def run_pipeline(webrtc_connection, config: PipelineConfig):
         },
     ]
 
-    context = LLMContext(messages)
+    tools = None
+    if config.calendar_id:
+        tools = ToolsSchema(standard_tools=[GET_AVAILABLE_DATE_TIME_FUNCTION])
+
+        async def get_available_date_time(
+            params: FunctionCallParams,
+            date: str | None = None,
+        ) -> None:
+            """Get available time slots for a date. Uses today if date omitted. Returns slots that are not booked.
+
+            Args:
+                params: Function call parameters from the LLM service.
+                date: Date in YYYY-MM-DD format. Defaults to today if omitted.
+            """
+            if not date:
+                date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            user_id = _calendar_user_id(config.calendar_id)
+            svc = CalendarService()
+            days = svc.get_availability(user_id, date, date)
+            slots = days[0]["slots"] if days else []
+            await params.result_callback({"date": date, "available_slots": slots})
+
+        llm.register_direct_function(get_available_date_time, cancel_on_interruption=False)
+
+    context = LLMContext(messages, tools=tools)
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(
         context,
         user_params=LLMUserAggregatorParams(

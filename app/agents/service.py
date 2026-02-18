@@ -22,6 +22,7 @@ class AgentService:
             max_tokens=data.max_tokens,
             voice_provider=data.voice_provider,
             voice_id=data.voice_id,
+            calendar_id=data.calendar_id,
         )
         user.agents.append(agent)
         self.user_repo.update(user)
@@ -60,6 +61,8 @@ class AgentService:
             agent.voice_id = data.voice_id
         if data.is_active is not None:
             agent.is_active = data.is_active
+        if "calendar_id" in data.model_fields_set:
+            agent.calendar_id = data.calendar_id
 
         agent.updated_at = datetime.now(timezone.utc).isoformat()
         self.user_repo.update(user)
@@ -99,6 +102,7 @@ class AgentService:
             voice_provider=agent.voice_provider,
             voice_id=agent.voice_id,
             is_active=agent.is_active,
+            calendar_id=agent.calendar_id,
             created_at=agent.created_at,
             updated_at=agent.updated_at,
         )

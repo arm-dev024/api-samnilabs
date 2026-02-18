@@ -18,6 +18,7 @@ async def run_agent_playground(webrtc_connection, agent: Agent):
         max_tokens=agent.max_tokens,
         voice_id=agent.voice_id,
         label=f"playground:{agent.id}",
+        calendar_id=agent.calendar_id,
     )
 
     await run_pipeline(webrtc_connection, config)
