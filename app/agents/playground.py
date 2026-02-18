@@ -10,7 +10,8 @@ async def run_agent_playground(webrtc_connection, agent: Agent):
 
     config = PipelineConfig(
         system_prompt=(
-            f"{agent.system_prompt}\n\n"
+            f"Agent name: {agent.name}."
+            f"System prompt: {agent.system_prompt}\n\n"
             f"Current date and time: {current_datetime}."
         ),
         model=agent.model,
