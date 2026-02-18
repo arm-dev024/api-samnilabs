@@ -21,6 +21,12 @@ def get_dynamodb_table():
     return dynamodb.Table(settings.db.table_name)
 
 
+def get_calendar_table():
+    """Get the calendar DynamoDB table resource (PK/SK single-table design)."""
+    dynamodb = get_dynamodb_resource()
+    return dynamodb.Table(settings.db.calendar_table_name)
+
+
 def create_users_table_if_not_exists():
     """Create the users table in DynamoDB if it doesn't already exist."""
     dynamodb = get_dynamodb_resource()
@@ -62,6 +68,32 @@ def create_users_table_if_not_exists():
                     "WriteCapacityUnits": 5,
                 },
             },
+        ],
+        ProvisionedThroughput={
+            "ReadCapacityUnits": 5,
+            "WriteCapacityUnits": 5,
+        },
+    )
+    table.wait_until_exists()
+
+
+def create_calendar_table_if_not_exists():
+    """Create the calendar table (separate from users) with PK/SK single-table design."""
+    dynamodb = get_dynamodb_resource()
+    existing_tables = dynamodb.meta.client.list_tables()["TableNames"]
+
+    if settings.db.calendar_table_name in existing_tables:
+        return
+
+    table = dynamodb.create_table(
+        TableName=settings.db.calendar_table_name,
+        KeySchema=[
+            {"AttributeName": "PK", "KeyType": "HASH"},
+            {"AttributeName": "SK", "KeyType": "RANGE"},
+        ],
+        AttributeDefinitions=[
+            {"AttributeName": "PK", "AttributeType": "S"},
+            {"AttributeName": "SK", "AttributeType": "S"},
         ],
         ProvisionedThroughput={
             "ReadCapacityUnits": 5,

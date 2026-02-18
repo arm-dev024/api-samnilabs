@@ -7,16 +7,21 @@ from app.agents.router import router as agents_router, playground_webrtc_handler
 from app.auth.dependencies import AuthMiddleware
 from app.auth.router import router as auth_router
 from app.bot.router import router as bot_router, small_webrtc_handler
+from app.calendar.router import router as calendar_router
 from app.subscription.router import router as subscription_router
 from app.config import settings
-from app.database import create_users_table_if_not_exists
+from app.database import (
+    create_calendar_table_if_not_exists,
+    create_users_table_if_not_exists,
+)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings.print_env_summary()
-    # Create DynamoDB table on startup if it doesn't exist
+    # Create DynamoDB tables on startup if they don't exist
     create_users_table_if_not_exists()
+    create_calendar_table_if_not_exists()
     yield
     # Clean up WebRTC connections on shutdown
     await small_webrtc_handler.close()
@@ -47,6 +52,7 @@ app.add_middleware(AuthMiddleware)
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(bot_router, prefix="/api", tags=["bot"])
 app.include_router(subscription_router, prefix="/subscription", tags=["subscription"])
+app.include_router(calendar_router, prefix="/calendar", tags=["calendar"])
 app.include_router(agents_router, prefix="/agents", tags=["agents"])
 
 

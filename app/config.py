@@ -22,6 +22,7 @@ class DynamoDBSettings(BaseModel):
     endpoint_url: HttpUrl = "http://localhost:8020"
     region: str = "us-east-1"
     table_name: str = "samnilabs_users"
+    calendar_table_name: str = "samnilabs_calendar"
     aws_access_key_id: str = "local"
     aws_secret_access_key: SecretStr = "local"
 
